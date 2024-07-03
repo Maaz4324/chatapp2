@@ -86,12 +86,19 @@ class _LoginState extends State<Login> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Welcome to ChatApp!',
+                  'RickRoll welcomes you!',
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
+                ),
+                Image.network(
+                  'https://media1.tenor.com/m/x8v1oNUOmg4AAAAd/rickroll-roll.gif', // Replace with your image URL
+                  width: 100, // Adjust width as needed
+                  height: 100, // Adjust height as needed
+                  fit: BoxFit
+                      .cover, // Adjust the fit type according to your preference
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
