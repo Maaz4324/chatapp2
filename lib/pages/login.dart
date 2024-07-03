@@ -13,7 +13,6 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
   User? _user;
 
   @override
@@ -34,17 +33,81 @@ class _LoginState extends State<Login> {
   }
 
   Widget _googleSignInButton() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login page'),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.blue,
+            Colors.green,
+          ],
+        ),
       ),
-      body: Center(
-        child: SizedBox(
-          height: 50,
-          child: SignInButton(
-            Buttons.google,
-            text: "Sign up with google",
-            onPressed: _handleGoogleSignIn,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: const Text(
+            'Login Page',
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+            ),
+          ),
+          centerTitle: true,
+          bottom: PreferredSize(
+            preferredSize: Size.fromHeight(4.0),
+            child: Container(
+              color: Colors.black,
+              height: 3.0,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.yellow,
+              border: Border.all(
+                color: Colors.black,
+                width: 3,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  offset: Offset(10, 10),
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Welcome to ChatApp!',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 50,
+                  child: SignInButton(
+                    Buttons.google,
+                    text: "Sign up with Google",
+                    onPressed: _handleGoogleSignIn,
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(color: Colors.black, width: 3),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -54,7 +117,6 @@ class _LoginState extends State<Login> {
   Future<void> _handleGoogleSignIn() async {
     try {
       GoogleAuthProvider _googleAuthProvider = GoogleAuthProvider();
-
       UserCredential userCredential =
           await _auth.signInWithProvider(_googleAuthProvider);
       print(userCredential.user);
@@ -62,7 +124,6 @@ class _LoginState extends State<Login> {
 
       if (user != null) {
         print(user);
-        //   // Store user data in Firestore
         storeInFirestore(user);
       }
     } catch (e) {
@@ -77,7 +138,6 @@ class _LoginState extends State<Login> {
     final userSnapshot = await userDoc.get();
     print(userSnapshot);
     if (!userSnapshot.exists) {
-      // If the user document does not exist, create it
       userDoc.set({
         'uid': user.uid,
         'displayName': user.displayName,

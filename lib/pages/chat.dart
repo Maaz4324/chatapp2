@@ -145,6 +145,7 @@ class _ChatPageState extends State<ChatPage> {
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                fontFamily: "HelveticaNeue",
               ),
             ),
           ],

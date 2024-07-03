@@ -69,11 +69,9 @@ class _HomeState extends State<Home> {
   void _signOut(BuildContext context) async {
     await _auth.signOut();
     try {
-      // ignore: use_build_context_synchronously
       Navigator.of(context).pushReplacementNamed('/login');
     } catch (e) {
       print("Error signing out: $e");
-      // Optionally, show an error message to the user
     }
   }
 
@@ -83,9 +81,23 @@ class _HomeState extends State<Home> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         title: const Text(
-          'Company Name',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          'RickRoll',
+          style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+              fontFamily: "HelveticaNeue"),
+        ),
+        centerTitle: true,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: Colors.black, width: 3),
+            ),
+          ),
         ),
         actions: [
           if (user != null)
@@ -122,20 +134,23 @@ class _HomeState extends State<Home> {
                               Text(
                                 'Name: ${userData['displayName']}',
                                 style: TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: "HelveticaNeue"),
                               ),
-                              SizedBox(
-                                  height: 4), // Add some space between texts
+                              SizedBox(height: 4),
                               Text(
                                 'Email: ${userData['email']}',
                                 style: TextStyle(
-                                    fontSize: 16, fontStyle: FontStyle.italic),
+                                    fontSize: 16,
+                                    fontStyle: FontStyle.italic,
+                                    fontFamily: "HelveticaNeue"),
                               ),
-                              SizedBox(
-                                  height: 4), // Add some space between texts
+                              SizedBox(height: 4),
                               Text(
                                 'Joined: ${createdAt != null ? DateFormat.yMMMd().format(createdAt) : 'N/A'}',
-                                style: TextStyle(fontSize: 16),
+                                style: TextStyle(
+                                    fontSize: 16, fontFamily: "HelveticaNeue"),
                               ),
                             ],
                           ),
@@ -146,9 +161,12 @@ class _HomeState extends State<Home> {
                         ),
                       ];
                     },
-                    child: CircleAvatar(
-                      backgroundImage: NetworkImage(user.photoURL ?? ''),
-                      radius: 20,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: CircleAvatar(
+                        backgroundImage: NetworkImage(user.photoURL ?? ''),
+                        radius: 20,
+                      ),
                     ),
                   );
                 } else {
@@ -158,52 +176,83 @@ class _HomeState extends State<Home> {
             ),
         ],
       ),
-      body: FutureBuilder<List<DocumentSnapshot>>(
-        future: _friendsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error fetching friends'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No friends found'));
-          } else {
-            List<DocumentSnapshot> friendsDocs = snapshot.data!;
-            return ListView.builder(
-              itemCount: friendsDocs.length,
-              itemBuilder: (context, index) {
-                Map<String, dynamic> data =
-                    friendsDocs[index].data()! as Map<String, dynamic>;
+      body: Container(
+        color: Color(0xFFE0E0E0), // Greyish white background
+        child: FutureBuilder<List<DocumentSnapshot>>(
+          future: _friendsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error fetching friends'));
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(child: Text('No friends found'));
+            } else {
+              List<DocumentSnapshot> friendsDocs = snapshot.data!;
+              return ListView.builder(
+                itemCount: friendsDocs.length,
+                itemBuilder: (context, index) {
+                  Map<String, dynamic> data =
+                      friendsDocs[index].data()! as Map<String, dynamic>;
 
-                return FutureBuilder<String?>(
-                  future: _getLastMessage(friendsDocs[index].id),
-                  builder: (context, snapshot) {
-                    String lastMessage = snapshot.data ?? 'No messages yet';
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: NetworkImage(data['photoURL'] ?? ''),
-                      ),
-                      title: Text(data['displayName'] ?? 'No Name'),
-                      subtitle: Text(lastMessage),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChatPage(
-                              recipientId: friendsDocs[index].id,
-                              recipientName: data['displayName'] ?? 'No Name',
-                              recipientPhotoUrl: data['photoURL'] ?? '',
+                  return FutureBuilder<String?>(
+                    future: _getLastMessage(friendsDocs[index].id),
+                    builder: (context, snapshot) {
+                      String lastMessage = snapshot.data ?? 'No messages yet';
+                      return Container(
+                        margin:
+                            EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.teal,
+                          border: Border.all(
+                            color: Colors.black,
+                            width: 3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              offset: Offset(5, 5),
+                              blurRadius: 0,
+                            ),
+                          ],
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage:
+                                NetworkImage(data['photoURL'] ?? ''),
+                          ),
+                          title: Text(
+                            data['displayName'] ?? 'No Name',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            );
-          }
-        },
+                          subtitle: Text(
+                            lastMessage,
+                            style: TextStyle(fontFamily: "HelveticaNeue"),
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatPage(
+                                  recipientId: friendsDocs[index].id,
+                                  recipientName:
+                                      data['displayName'] ?? 'No Name',
+                                  recipientPhotoUrl: data['photoURL'] ?? '',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
+            }
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
@@ -211,9 +260,15 @@ class _HomeState extends State<Home> {
             context,
             MaterialPageRoute(builder: (context) => SearchFriendsPage()),
           );
-          _fetchFriends(); // Refresh friends list after returning from the search page
+          _fetchFriends();
         },
         child: Icon(Icons.add),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.black,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: Colors.black, width: 3),
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }
