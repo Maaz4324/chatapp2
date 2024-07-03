@@ -2,6 +2,7 @@ import 'package:RickRoll/pages/search.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:intl/intl.dart';
 import 'chat.dart';
 
@@ -15,6 +16,7 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   Future<List<DocumentSnapshot>>? _friendsFuture;
 
   @override
@@ -58,16 +60,24 @@ class _HomeState extends State<Home> {
     if (user != null) {
       DocumentSnapshot userDoc =
           await _firestore.collection('users').doc(user.uid).get();
-      List<dynamic> friends = userDoc['friends'] ?? [];
-      if (friends.isNotEmpty) {
-        QuerySnapshot friendsQuery = await _firestore
-            .collection('users')
-            .where(FieldPath.documentId, whereIn: friends)
-            .get();
-        setState(() {
-          _friendsFuture = Future.value(friendsQuery.docs);
-        });
+
+      if (userDoc.exists) {
+        List<dynamic> friends = userDoc['friends'] ?? [];
+        if (friends.isNotEmpty) {
+          QuerySnapshot friendsQuery = await _firestore
+              .collection('users')
+              .where(FieldPath.documentId, whereIn: friends)
+              .get();
+          setState(() {
+            _friendsFuture = Future.value(friendsQuery.docs);
+          });
+        } else {
+          setState(() {
+            _friendsFuture = Future.value([]);
+          });
+        }
       } else {
+        // Handle case where document does not exist
         setState(() {
           _friendsFuture = Future.value([]);
         });
@@ -97,7 +107,11 @@ class _HomeState extends State<Home> {
   }
 
   void _signOut(BuildContext context) async {
+    // Clear the FirebaseAuth session
     await _auth.signOut();
+
+    // Clear the GoogleSignIn session
+    await _googleSignIn.disconnect();
     try {
       Navigator.of(context).pushReplacementNamed('/login');
     } catch (e) {

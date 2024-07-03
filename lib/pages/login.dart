@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:sign_in_button/sign_in_button.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -13,6 +14,7 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   User? _user;
 
   @override
@@ -34,7 +36,7 @@ class _LoginState extends State<Login> {
 
   Widget _googleSignInButton() {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -121,36 +123,63 @@ class _LoginState extends State<Login> {
     );
   }
 
-  Future<void> _handleGoogleSignIn() async {
+  Future<User?> _handleGoogleSignIn() async {
     try {
-      GoogleAuthProvider _googleAuthProvider = GoogleAuthProvider();
-      UserCredential userCredential =
-          await _auth.signInWithProvider(_googleAuthProvider);
-      print(userCredential.user);
-      User? user = userCredential.user;
-
-      if (user != null) {
-        print(user);
-        storeInFirestore(user);
+      // Ensure GoogleSignIn prompts the account picker
+      await _googleSignIn.signOut();
+      // Trigger the authentication flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        // The user canceled the sign-in
+        return null;
       }
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      // Create a new credential
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      // Sign in to Firebase with the new credential
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+      if (userCredential.user != null) {
+        storeInFirestore(userCredential.user!);
+      }
+      return userCredential.user;
     } catch (e) {
       print(e);
+      return null;
     }
   }
 
   void storeInFirestore(User user) async {
     final userDoc =
         FirebaseFirestore.instance.collection('users').doc(user.uid);
-    print(userDoc);
     final userSnapshot = await userDoc.get();
-    print(userSnapshot);
+
+    // Retrieve displayName from providerData if it's null in the user object
+    String? displayName = user.displayName;
+    if (displayName == null || displayName.isEmpty) {
+      for (var profile in user.providerData) {
+        if (profile.displayName != null && profile.displayName!.isNotEmpty) {
+          displayName = profile.displayName;
+          break;
+        }
+      }
+    }
+
     if (!userSnapshot.exists) {
-      userDoc.set({
+      await userDoc.set({
         'uid': user.uid,
-        'displayName': user.displayName,
+        'displayName': displayName,
         'email': user.email,
         'photoURL': user.photoURL,
         'createdAt': FieldValue.serverTimestamp(),
+        'friends': [],
       });
     }
   }
