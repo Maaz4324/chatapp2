@@ -1,4 +1,4 @@
-import 'package:chatapp2/pages/home.dart';
+import 'package:RickRoll/pages/home.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -46,7 +46,7 @@ class _LoginState extends State<Login> {
       ),
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: const Color(0xFFDAF5F0),
           elevation: 0,
           title: const Text(
             'Login Page',

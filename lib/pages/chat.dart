@@ -27,6 +27,7 @@ class _ChatPageState extends State<ChatPage> {
   final DateFormat timeFormat = DateFormat('h:mm a');
   final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
+
   void _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
 
@@ -124,40 +125,77 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 80,
         leadingWidth: 40,
         leading: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.only(
+            left: 12.0,
+            top: 12.0,
+            bottom: 8.0, // Added bottom padding
+          ),
           child: GestureDetector(
             onTap: () {
               Navigator.pop(context);
             },
-            child: Icon(Icons.arrow_back),
+            child: const IconTheme(
+              data: IconThemeData(
+                size: 30, // Increased size for a thicker appearance
+                color: Colors.black,
+              ),
+              child: const Icon(Icons.arrow_back),
+            ),
           ),
         ),
         title: Row(
           children: [
-            CircleAvatar(
-              backgroundImage: NetworkImage(widget.recipientPhotoUrl),
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 0, 0, 0), // Border color
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    offset: const Offset(3, 3),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                backgroundImage: NetworkImage(widget.recipientPhotoUrl),
+                radius: 20,
+              ),
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Text(
               widget.recipientName,
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 fontFamily: "HelveticaNeue",
+                color: Colors.black,
               ),
             ),
           ],
         ),
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.only(right: 8.0),
-            child: Icon(Icons.more_vert),
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              child: const Icon(Icons.more_vert, color: Colors.black),
+            ),
           ),
         ],
         elevation: 0,
-        backgroundColor: Colors.blueGrey,
+        backgroundColor: const Color(0xFFDAF5F0),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: Colors.black, width: 2.8),
+            ),
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -179,7 +217,17 @@ class _ChatPageState extends State<ChatPage> {
                 }).toList();
 
                 if (conversations.isEmpty) {
-                  return const Center(child: Text('Start Conversation'));
+                  return const Center(
+                    child: Text(
+                      'Start Conversation',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontFamily: "HelveticaNeue",
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  );
                 }
 
                 final conversationRef = conversations.first.reference;
@@ -197,7 +245,17 @@ class _ChatPageState extends State<ChatPage> {
                     final List<DocumentSnapshot> docs = snapshot.data!.docs;
 
                     if (docs.isEmpty) {
-                      return const Center(child: Text('Start Conversation'));
+                      return const Center(
+                        child: Text(
+                          'Start Conversation',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontFamily: "HelveticaNeue",
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      );
                     }
 
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -218,11 +276,21 @@ class _ChatPageState extends State<ChatPage> {
                               ? Alignment.centerRight
                               : Alignment.centerLeft,
                           child: Container(
-                            constraints: BoxConstraints(minWidth: 70),
+                            constraints: const BoxConstraints(minWidth: 70),
                             child: Card(
-                              color: isSender ? Colors.blue : Colors.grey[200],
+                              color: isSender
+                                  ? const Color(
+                                      0xFFFF6B6B) // Sender's message color
+                                  : const Color(
+                                      0xFFBAFCA2), // Recipient's message color
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: const BorderSide(
+                                    color: Colors.black, width: 2),
+                              ),
+                              elevation: 0,
                               child: Padding(
-                                padding: const EdgeInsets.all(8.0),
+                                padding: const EdgeInsets.all(10.0),
                                 child: Column(
                                   crossAxisAlignment: isSender
                                       ? CrossAxisAlignment.end
@@ -234,9 +302,12 @@ class _ChatPageState extends State<ChatPage> {
                                         color: isSender
                                             ? Colors.white
                                             : Colors.black,
+                                        fontFamily: "HelveticaNeue",
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12, // Reduced font size
                                       ),
                                     ),
-                                    SizedBox(height: 5),
+                                    const SizedBox(height: 5),
                                     Text(
                                       data['timestamp'] != null
                                           ? timeFormat.format(
@@ -245,6 +316,7 @@ class _ChatPageState extends State<ChatPage> {
                                           : 'No timestamp',
                                       style: TextStyle(
                                         fontSize: 10,
+                                        fontFamily: "HelveticaNeue",
                                         color: isSender
                                             ? Colors.white70
                                             : Colors.black54,
@@ -268,27 +340,73 @@ class _ChatPageState extends State<ChatPage> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                    maxLines: null,
-                    decoration: InputDecoration(
-                      hintText: 'Type a message...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDAF5F0),
+                      border: Border.all(color: Colors.black, width: 2),
+                      borderRadius: BorderRadius.circular(30.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.5),
+                          offset: const Offset(4, 3),
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: _messageController,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      maxLines: null,
+                      decoration: InputDecoration(
+                        hintText: 'Type a message...',
+                        hintStyle: TextStyle(
+                          color: Colors.black.withOpacity(0.6),
+                          fontFamily: "HelveticaNeue",
+                          fontWeight: FontWeight.bold,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30.0),
+                          borderSide:
+                              const BorderSide(color: Colors.black, width: 8),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFDAF5F0),
+                        contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 20), // Increased vertical padding
                       ),
-                      filled: true,
-                      fillColor: Colors.grey[200],
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 10, horizontal: 20),
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontFamily: "HelveticaNeue",
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16, // Reduced font size
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: _isSending ? null : _sendMessage,
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFA7DBD8), // Updated send button color
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.black, // Border color
+                      width: 2.8, // Border width
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        offset: const Offset(4, 3),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: _isSending ? null : _sendMessage,
+                  ),
                 ),
               ],
             ),

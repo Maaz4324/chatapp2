@@ -1,6 +1,6 @@
-import 'package:chatapp2/firebase_options.dart';
-import 'package:chatapp2/pages/home.dart';
-import 'package:chatapp2/pages/login.dart';
+import 'package:RickRoll/firebase_options.dart';
+import 'package:RickRoll/pages/home.dart';
+import 'package:RickRoll/pages/login.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';

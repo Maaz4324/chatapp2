@@ -22,41 +22,104 @@ class _SearchFriendsPageState extends State<SearchFriendsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Search Friends'),
+        title: const Text(
+          'Search Friends',
+          style: TextStyle(
+            fontFamily: "HelveticaNeue",
+            color: Colors.black,
+          ),
+        ),
+        backgroundColor: const Color(0xFFF4D738),
+        elevation: 0,
+        centerTitle: true,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: Colors.black, width: 3),
+            ),
+          ),
+        ),
       ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.grey[200],
-                contentPadding:
-                    EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFDAF5F0),
+                border: Border.all(color: Colors.black, width: 3),
+                borderRadius: BorderRadius.circular(30.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    offset: const Offset(5, 5),
+                    blurRadius: 0,
+                  ),
+                ],
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value.trim();
-                });
-              },
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search...',
+                  hintStyle: TextStyle(
+                    color: Colors.black.withOpacity(0.6),
+                    fontFamily: "HelveticaNeue",
+                  ),
+                  prefixIcon: const Icon(Icons.search, color: Colors.black),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+                ),
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontFamily: "HelveticaNeue",
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.trim();
+                  });
+                },
+              ),
             ),
           ),
           Expanded(
             child: _searchQuery.isEmpty
-                ? Center(child: Text('Start searching for friends'))
+                ? Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF90EE90),
+                        border: Border.all(color: Colors.black, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.5),
+                            offset: const Offset(5, 5),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        'Start searching for friends',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontFamily: "HelveticaNeue",
+                        ),
+                      ),
+                    ),
+                  )
                 : StreamBuilder<QuerySnapshot>(
                     stream: _firestore.collection('users').snapshots(),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
+                        return const Center(
+                            child: CircularProgressIndicator(
+                          backgroundColor: Colors.black,
+                        ));
                       }
 
                       List<DocumentSnapshot> docs = snapshot.data!.docs;
@@ -78,26 +141,74 @@ class _SearchFriendsPageState extends State<SearchFriendsPage> {
                           Map<String, dynamic> data = filteredDocs[index]
                               .data()! as Map<String, dynamic>;
 
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage:
-                                  NetworkImage(data['photoURL'] ?? ''),
-                            ),
-                            title: Text(data['displayName'] ?? 'No Name'),
-                            subtitle: Text(data['email'] ?? 'No Email'),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChatPage(
-                                    recipientId: filteredDocs[index].id,
-                                    recipientName:
-                                        data['displayName'] ?? 'No Name',
-                                    recipientPhotoUrl: data['photoURL'] ?? '',
-                                  ),
+                          return Container(
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFA388EF),
+                              border: Border.all(
+                                color: Colors.black,
+                                width: 3,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.5),
+                                  offset: const Offset(5, 5),
+                                  blurRadius: 0,
                                 ),
-                              );
-                            },
+                              ],
+                            ),
+                            child: ListTile(
+                              leading: Container(
+                                padding:
+                                    const EdgeInsets.all(2), // Border width
+                                decoration: BoxDecoration(
+                                  color: Colors.black, // Border color
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.5),
+                                      offset: const Offset(3, 3),
+                                      blurRadius: 0,
+                                    ),
+                                  ],
+                                ),
+                                child: CircleAvatar(
+                                  backgroundImage:
+                                      NetworkImage(data['photoURL'] ?? ''),
+                                  radius: 20,
+                                ),
+                              ),
+                              title: Text(
+                                data['displayName'] ?? 'No Name',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: "HelveticaNeue",
+                                  color: Colors.black,
+                                ),
+                              ),
+                              subtitle: Text(
+                                data['email'] ?? 'No Email',
+                                style: const TextStyle(
+                                  fontFamily: "HelveticaNeue",
+                                  color: Colors.black,
+                                ),
+                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ChatPage(
+                                      recipientId: filteredDocs[index].id,
+                                      recipientName:
+                                          data['displayName'] ?? 'No Name',
+                                      recipientPhotoUrl: data['photoURL'] ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                           );
                         },
                       );
