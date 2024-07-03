@@ -209,6 +209,9 @@ class _ChatPageState extends State<ChatPage> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    maxLines: null,
                     decoration: InputDecoration(
                       hintText: 'Type a message...',
                       border: OutlineInputBorder(
@@ -228,7 +231,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ],
             ),
-          ),
+          )
         ],
       ),
     );
