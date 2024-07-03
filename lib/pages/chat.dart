@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class ChatPage extends StatefulWidget {
   final String recipientId;
@@ -22,7 +23,11 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  final DateFormat timeFormat = DateFormat('h:mm a');
+  final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
+
   void _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
     setState(() {
@@ -90,11 +95,22 @@ class _ChatPageState extends State<ChatPage> {
       });
 
       _messageController.clear();
+      _scrollToBottom();
     }
 
     setState(() {
       _isSending = false;
     });
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -147,7 +163,12 @@ class _ChatPageState extends State<ChatPage> {
                       return Center(child: Text('Start Conversation'));
                     }
 
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _scrollToBottom();
+                    });
+
                     return ListView.builder(
+                      controller: _scrollController,
                       reverse: false,
                       itemCount: docs.length,
                       itemBuilder: (context, index) {
@@ -159,38 +180,41 @@ class _ChatPageState extends State<ChatPage> {
                           alignment: isSender
                               ? Alignment.centerRight
                               : Alignment.centerLeft,
-                          child: Card(
-                            color: isSender ? Colors.blue : Colors.grey[200],
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: isSender
-                                    ? CrossAxisAlignment.end
-                                    : CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    data['content'],
-                                    style: TextStyle(
-                                      color: isSender
-                                          ? Colors.white
-                                          : Colors.black,
+                          child: Container(
+                            constraints: BoxConstraints(minWidth: 70),
+                            child: Card(
+                              color: isSender ? Colors.blue : Colors.grey[200],
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: isSender
+                                      ? CrossAxisAlignment.end
+                                      : CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      data['content'],
+                                      style: TextStyle(
+                                        color: isSender
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    data['timestamp'] != null
-                                        ? (data['timestamp'] as Timestamp)
-                                            .toDate()
-                                            .toString()
-                                        : 'No timestamp',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: isSender
-                                          ? Colors.white70
-                                          : Colors.black54,
-                                    ),
-                                  ),
-                                ],
+                                    SizedBox(height: 5),
+                                    Text(
+                                      data['timestamp'] != null
+                                          ? timeFormat.format(
+                                              (data['timestamp'] as Timestamp)
+                                                  .toDate())
+                                          : 'No timestamp',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: isSender
+                                            ? Colors.white70
+                                            : Colors.black54,
+                                      ),
+                                    )
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -231,7 +255,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
