@@ -2,6 +2,7 @@ import 'package:chatapp2/pages/search.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'chat.dart';
 
 class Home extends StatefulWidget {
@@ -24,7 +25,6 @@ class _HomeState extends State<Home> {
 
   Future<void> _fetchFriends() async {
     User? user = _auth.currentUser;
-    print("Friends--------${user}");
     if (user != null) {
       DocumentSnapshot userDoc =
           await _firestore.collection('users').doc(user.uid).get();
@@ -47,6 +47,23 @@ class _HomeState extends State<Home> {
         _friendsFuture = Future.value([]);
       });
     }
+  }
+
+  Future<String?> _getLastMessage(String friendId) async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      QuerySnapshot conversationQuery = await _firestore
+          .collection('conversations')
+          .where('users', arrayContains: user.uid)
+          .get();
+      for (var doc in conversationQuery.docs) {
+        List<dynamic> users = doc['users'];
+        if (users.contains(friendId)) {
+          return doc['lastMessage'];
+        }
+      }
+    }
+    return null;
   }
 
   void _signOut(BuildContext context) async {
@@ -72,24 +89,72 @@ class _HomeState extends State<Home> {
         ),
         actions: [
           if (user != null)
-            PopupMenuButton<String>(
-              onSelected: (String value) {
-                if (value == 'logout') {
-                  _signOut(context);
+            FutureBuilder<DocumentSnapshot>(
+              future: _firestore.collection('users').doc(user.uid).get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return CircularProgressIndicator();
+                } else if (snapshot.hasError) {
+                  return Icon(Icons.error);
+                } else if (snapshot.hasData && snapshot.data != null) {
+                  var userData = snapshot.data!.data() as Map<String, dynamic>;
+
+                  var createdAt;
+                  if (userData['createdAt'] != null &&
+                      userData['createdAt'] is Timestamp) {
+                    createdAt = (userData['createdAt'] as Timestamp).toDate();
+                  }
+
+                  return PopupMenuButton<String>(
+                    onSelected: (String value) {
+                      if (value == 'logout') {
+                        _signOut(context);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) {
+                      return [
+                        PopupMenuItem<String>(
+                          value: 'info',
+                          enabled: false,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Name: ${userData['displayName']}',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(
+                                  height: 4), // Add some space between texts
+                              Text(
+                                'Email: ${userData['email']}',
+                                style: TextStyle(
+                                    fontSize: 16, fontStyle: FontStyle.italic),
+                              ),
+                              SizedBox(
+                                  height: 4), // Add some space between texts
+                              Text(
+                                'Joined: ${createdAt != null ? DateFormat.yMMMd().format(createdAt) : 'N/A'}',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'logout',
+                          child: Text('Sign out'),
+                        ),
+                      ];
+                    },
+                    child: CircleAvatar(
+                      backgroundImage: NetworkImage(user.photoURL ?? ''),
+                      radius: 20,
+                    ),
+                  );
+                } else {
+                  return Icon(Icons.error);
                 }
               },
-              itemBuilder: (BuildContext context) {
-                return [
-                  const PopupMenuItem<String>(
-                    value: 'logout',
-                    child: Text('Sign out'),
-                  ),
-                ];
-              },
-              child: CircleAvatar(
-                backgroundImage: NetworkImage(user.photoURL ?? ''),
-                radius: 20,
-              ),
             ),
         ],
       ),
@@ -110,22 +175,28 @@ class _HomeState extends State<Home> {
                 Map<String, dynamic> data =
                     friendsDocs[index].data()! as Map<String, dynamic>;
 
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundImage: NetworkImage(data['photoURL'] ?? ''),
-                  ),
-                  title: Text(data['displayName'] ?? 'No Name'),
-                  subtitle: Text(data['email'] ?? 'No Email'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatPage(
-                          recipientId: friendsDocs[index].id,
-                          recipientName: data['displayName'] ?? 'No Name',
-                          recipientPhotoUrl: data['photoURL'] ?? '',
-                        ),
+                return FutureBuilder<String?>(
+                  future: _getLastMessage(friendsDocs[index].id),
+                  builder: (context, snapshot) {
+                    String lastMessage = snapshot.data ?? 'No messages yet';
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: NetworkImage(data['photoURL'] ?? ''),
                       ),
+                      title: Text(data['displayName'] ?? 'No Name'),
+                      subtitle: Text(lastMessage),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatPage(
+                              recipientId: friendsDocs[index].id,
+                              recipientName: data['displayName'] ?? 'No Name',
+                              recipientPhotoUrl: data['photoURL'] ?? '',
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 );

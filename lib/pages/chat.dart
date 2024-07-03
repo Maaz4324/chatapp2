@@ -27,9 +27,12 @@ class _ChatPageState extends State<ChatPage> {
   final DateFormat timeFormat = DateFormat('h:mm a');
   final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
-
   void _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
+
+    final String message = _messageController.text.trim();
+    _messageController.clear(); // Clear the text field immediately
+
     setState(() {
       _isSending = true;
     });
@@ -39,62 +42,66 @@ class _ChatPageState extends State<ChatPage> {
       final String currentUserId = user.uid;
       final String recipientId = widget.recipientId;
 
-      // Check if a conversation already exists
-      QuerySnapshot existingConversations = await _firestore
-          .collection('conversations')
-          .where('users', arrayContains: currentUserId)
-          .get();
+      // Perform Firestore operations in the background
+      Future<void> sendMessageToFirestore() async {
+        // Check if a conversation already exists
+        QuerySnapshot existingConversations = await _firestore
+            .collection('conversations')
+            .where('users', arrayContains: currentUserId)
+            .get();
 
-      DocumentReference? conversationRef;
+        DocumentReference? conversationRef;
 
-      if (existingConversations.docs.isNotEmpty) {
-        // Check if any of the existing conversations include the recipientId
-        for (var doc in existingConversations.docs) {
-          List<dynamic> users = doc['users'];
-          if (users.contains(recipientId)) {
-            conversationRef = doc.reference;
-            break;
+        if (existingConversations.docs.isNotEmpty) {
+          // Check if any of the existing conversations include the recipientId
+          for (var doc in existingConversations.docs) {
+            List<dynamic> users = doc['users'];
+            if (users.contains(recipientId)) {
+              conversationRef = doc.reference;
+              break;
+            }
           }
         }
+
+        if (conversationRef != null) {
+          // Conversation exists, update the last message and add new message to the messages subcollection
+          await conversationRef.update({
+            'lastMessage': message,
+            'lastMessageTimestamp': FieldValue.serverTimestamp(),
+          });
+
+          await conversationRef.collection('messages').add({
+            'content': message,
+            'senderId': currentUserId,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+        } else {
+          // Create a new conversation document
+          conversationRef = await _firestore.collection('conversations').add({
+            'users': [currentUserId, recipientId],
+            'lastMessage': message,
+            'lastMessageTimestamp': FieldValue.serverTimestamp(),
+          });
+
+          // Add subcollection 'messages' within the new conversation document
+          await conversationRef.collection('messages').add({
+            'content': message,
+            'senderId': currentUserId,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+        }
+
+        // Update the user's document to add the recipient to the friends array
+        await _firestore.collection('users').doc(currentUserId).update({
+          'friends': FieldValue.arrayUnion([recipientId]),
+        });
+        await _firestore.collection('users').doc(recipientId).update({
+          'friends': FieldValue.arrayUnion([currentUserId]),
+        });
       }
 
-      if (conversationRef != null) {
-        // Conversation exists, update the last message and add new message to the messages subcollection
-        await conversationRef.update({
-          'lastMessage': _messageController.text.trim(),
-          'lastMessageTimestamp': FieldValue.serverTimestamp(),
-        });
+      await sendMessageToFirestore();
 
-        await conversationRef.collection('messages').add({
-          'content': _messageController.text.trim(),
-          'senderId': currentUserId,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-      } else {
-        // Create a new conversation document
-        conversationRef = await _firestore.collection('conversations').add({
-          'users': [currentUserId, recipientId],
-          'lastMessage': _messageController.text.trim(),
-          'lastMessageTimestamp': FieldValue.serverTimestamp(),
-        });
-
-        // Add subcollection 'messages' within the new conversation document
-        await conversationRef.collection('messages').add({
-          'content': _messageController.text.trim(),
-          'senderId': currentUserId,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-      }
-
-      // Update the user's document to add the recipient to the friends array
-      await _firestore.collection('users').doc(currentUserId).update({
-        'friends': FieldValue.arrayUnion([recipientId]),
-      });
-      await _firestore.collection('users').doc(recipientId).update({
-        'friends': FieldValue.arrayUnion([currentUserId]),
-      });
-
-      _messageController.clear();
       _scrollToBottom();
     }
 
@@ -106,8 +113,8 @@ class _ChatPageState extends State<ChatPage> {
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: Duration(milliseconds: 300),
+        0.0,
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     }
@@ -161,7 +168,7 @@ class _ChatPageState extends State<ChatPage> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 final List<DocumentSnapshot> conversations =
@@ -171,7 +178,7 @@ class _ChatPageState extends State<ChatPage> {
                 }).toList();
 
                 if (conversations.isEmpty) {
-                  return Center(child: Text('Start Conversation'));
+                  return const Center(child: Text('Start Conversation'));
                 }
 
                 final conversationRef = conversations.first.reference;
@@ -179,17 +186,17 @@ class _ChatPageState extends State<ChatPage> {
                 return StreamBuilder<QuerySnapshot>(
                   stream: conversationRef
                       .collection('messages')
-                      .orderBy('timestamp', descending: false)
+                      .orderBy('timestamp', descending: true)
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
 
                     final List<DocumentSnapshot> docs = snapshot.data!.docs;
 
                     if (docs.isEmpty) {
-                      return Center(child: Text('Start Conversation'));
+                      return const Center(child: Text('Start Conversation'));
                     }
 
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -198,7 +205,7 @@ class _ChatPageState extends State<ChatPage> {
 
                     return ListView.builder(
                       controller: _scrollController,
-                      reverse: false,
+                      reverse: true,
                       itemCount: docs.length,
                       itemBuilder: (context, index) {
                         final data = docs[index].data() as Map<String, dynamic>;
@@ -272,14 +279,14 @@ class _ChatPageState extends State<ChatPage> {
                       ),
                       filled: true,
                       fillColor: Colors.grey[200],
-                      contentPadding:
-                          EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 20),
                     ),
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 IconButton(
-                  icon: Icon(Icons.send),
+                  icon: const Icon(Icons.send),
                   onPressed: _isSending ? null : _sendMessage,
                 ),
               ],
